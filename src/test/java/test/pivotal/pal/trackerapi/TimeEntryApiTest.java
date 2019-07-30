@@ -1,8 +1,14 @@
 package test.pivotal.pal.trackerapi;
 
-import com.jayway.jsonpath.DocumentContext;
-import io.pivotal.pal.tracker.PalTrackerApplication;
-import io.pivotal.pal.tracker.TimeEntry;
+import static com.jayway.jsonpath.JsonPath.parse;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
+
+import java.time.LocalDate;
+import java.util.Collection;
+import java.util.TimeZone;
+
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,14 +18,14 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.time.LocalDate;
-import java.util.Collection;
+import com.jayway.jsonpath.DocumentContext;
+import com.mysql.cj.jdbc.MysqlDataSource;
 
-import static com.jayway.jsonpath.JsonPath.parse;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
+import io.pivotal.pal.tracker.PalTrackerApplication;
+import io.pivotal.pal.tracker.TimeEntry;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = PalTrackerApplication.class, webEnvironment = RANDOM_PORT)
@@ -126,5 +132,16 @@ public class TimeEntryApiTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
         return (Long) response.getBody().getId();
+    }
+    
+    @Before
+    public void setUp() throws Exception {
+        MysqlDataSource dataSource = new MysqlDataSource();
+        dataSource.setUrl(System.getenv("SPRING_DATASOURCE_URL"));
+
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        jdbcTemplate.execute("TRUNCATE time_entries");
+
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
     }
 }
